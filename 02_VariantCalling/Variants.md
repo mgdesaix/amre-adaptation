@@ -1,5 +1,5 @@
-# WGS Preprocessing: From FASTQ to BAM files
+# Identifying variants with ANGSD
 
-Analysis-ready BAM files were produced from FASTQ files following methods I have outlined elsewhere for another project: [bcrf-climate respository](https://github.com/mgdesaix/bcrf-climate/blob/main/01_Preprocessing/Preprocessing.md)
+[ANGSD](http://www.popgen.dk/angsd/index.php/ANGSD) (Analysis of Next Generation Sequencing Data) is a software that was developed to analyze low-coverage sequencing data, and notably has many methods designed for accounting for genotype uncertainty. 
 
 
