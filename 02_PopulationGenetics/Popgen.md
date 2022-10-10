@@ -42,13 +42,13 @@ This reduced the data set to 5,898,729 SNPs, cool!
 
 **Note:** From here on, a key feature of ANGSD when running analyses back on the BAM files is to only reference these specific SNPs with the *-sites* and *-rf* parameters. But this can be problematic due to some old bugs in ANGSD. The only way I have found to get the *-sites* parameter to work properly is by downloading ANGSD manually (version 0.939, newest for me; NOT through Conda!!!!) and then linking to that download version. It also seems to work best when used with the *-rf* parameter for specifying the chromosomes/scaffolds of interest.
 
-**Another note:** I also sometimes find my self with a list of SNPs and an already prepared Beagle file that I want to subset by the list of SNPs. I could do the step previously mentioned and use "-sites" with ANGSD, but this goes back to the BAM files and is slow and could take days. Another way to quickly subset Beagle files that I like to do is to use an awk command in bash. The magically fast way to do that is:
+**Another note:** I also sometimes find myself with a list of SNPs and an already prepared Beagle file that I want to subset by the list of SNPs. I could do the step previously mentioned and use "-sites" with ANGSD, but this goes back to the BAM files and is slow and could take days. Another way to quickly subset Beagle files that I like to do is to use an awk command in bash. The magically fast way to do that is:
 
 ```
 awk 'NR==FNR{c[$1]++;next};c[$1]' ${ld_snps} <(zcat ${input}.beagle.gz) | gzip > ${output}.beagle.gz
 ```
 
-where `${ld_snps}` is a file with a single column of the `scaffold_position` format of SNP position in the beagle file (i.e. "scaffold"_"position"), and the other input is just your plan old gzipped beagle file. Run this code and then you get a new beagle file that only has the SNPs specified in the snps file. I find this super handy!
+where `${ld_snps}` is a file with a single column of the `scaffold_position` format of SNP position in the beagle file (i.e. "scaffold"_"position"), and the other input is just your plain old gzipped beagle file. Run this code and then you get a new beagle file that only has the SNPs specified in the snps file. I find this super handy!
 
 
 ## Principal components analysis
