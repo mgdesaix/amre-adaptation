@@ -1,0 +1,88 @@
+---
+title: 'Relatedness: ngsRelate'
+author: "Matt G. DeSaix"
+date: "6/20/2022"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+meta <- read_delim("../data/samples/amre_master_tidy.csv")
+bam.order <- read_delim("./data/amre.breeding.bams.txt", delim = " ",
+                        col_names = "bams") %>%
+  mutate(bams = gsub(pattern = "../../bamfiles/overlap_clipped/",
+                     replacement = "",
+                     x = bams))
+
+full.relate <- read_delim("./data/amre.ngsrelate.txt") %>%
+  mutate(a = a + 1,
+         b = b + 1) %>%
+  mutate(bam.a = bam.order$bams[a],
+         bam.b = bam.order$bams[b])
+```
+
+
+
+### Checking out the relatedness
+
+Related through KING
+```{r}
+relate.sub <- full.relate %>%
+  left_join(meta, by = c("bam.a" = "Bam")) %>%
+  rename("site.a" = "Site") %>%
+  left_join(meta, by = c("bam.b" = "Bam")) %>%
+  rename("site.b" = "Site") %>%
+  dplyr::select(bam.a, site.a, bam.b, site.b, Fa, Fb, rab, KING) 
+
+king.related <- relate.sub %>%
+  filter(KING > 0.08)
+```
+
+
+```{r}
+rab.related <- relate.sub %>%
+  filter(rab > 0.25)
+rab.related
+```
+
+### Removals
+
+Breeding
+
+```{r}
+remove.bams <- c("18N00848.bam", "225090303.bam", "225090304.bam", "SERU9024.bam", "SERU3034.bam")
+bams.breeding.norelate <- bam.order[!bam.order$bams %in% remove.bams,]
+# write_csv(bams.breeding.norelate, file = "./data/amre.breeding.bams.norelate.txt",
+#           col_names = F)
+```
+
+All bams no relate list...note that I'm only checking breeding individuals, highly unlikely we'll sample related individuals from wintering grounds
+
+```{r}
+bams.norelate <- meta[!meta$Bam %in% remove.bams,] %>%
+  dplyr::select(Bam)
+# write_csv(bams.norelate,
+#           file = "./data/amre.all.bams.norelate.txt",
+#           col_names = F)
+```
+
+
+Save by population
+
+```{r}
+meta.norelate <- bams.breeding.norelate %>%
+  left_join(meta, by = c("bams" = "Bam"))
+
+pops <- unique(meta.norelate$Site)
+for(i in 1:length(pops)){
+  out.name <- paste0("./data/pops/", pops[i], ".norelate.bams")
+  meta.norelate %>%
+    filter(Site == pops[i]) %>%
+    dplyr::select(bams) %>%
+    write_csv(file = out.name, col_names = F)
+}
+```
+
