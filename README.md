@@ -1,6 +1,6 @@
 # Conservation genomics analysis of low-coverage whole genome sequencing data from the American Redstart
 
-Bioinformatics and analysis scripts for research on American Redstart (*Setophaga ruticilla*) adaptation across the annual cycle using low-coverage whole genome sequence data.
+Bioinformatics and analysis scripts for research on American Redstart (*Setophaga ruticilla*) adaptation across the annual cycle using low-coverage whole genome sequence data. These data consist of 182 individuals from 16 sampling locations across their breeding range and 147 individuals from 15 sampling locations across the overwintering range.
 
 1.  [Data preprocessing](https://github.com/mgdesaix/amre-adaptation/blob/main/01_Preprocessing/Preprocessing.md): Producing analysis-ready BAM files from FASTQ files
 
