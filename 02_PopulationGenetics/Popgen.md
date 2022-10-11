@@ -63,7 +63,7 @@ where `${ld_snps}` is a file with a single column of the `scaffold_position` for
 I have found that working with different DNA sources such as feathers and blood can result in high variation of sequencing depth. This can then skew different population genetic analyses, especially population structure. Some related issues are addressed in [Lou et al. 2022](https://doi.org/10.1111/1755-0998.13559)
 
 
-<img src="./img/amre-populationALL-coverageDepth-plain.png" alt="Depth-plot" width="200"/>
+<img src="./img/amre-populationALL-coverageDepth-plain.png" alt="Depth-plot" width="600"/>
 
 ## Principal components analysis
 
