@@ -60,10 +60,18 @@ where `${ld_snps}` is a file with a single column of the `scaffold_position` for
 
 ## Depth variation and down sampling
 
-I have found that working with different DNA sources such as feathers and blood can result in high variation of sequencing depth. This can then skew different population genetic analyses, especially population structure. Some related issues are addressed in [Lou et al. 2022](https://doi.org/10.1111/1755-0998.13559)
+I have found that working with different DNA sources such as feathers and blood can result in high variation of sequencing depth. This can then skew different population genetic analyses, especially population structure. Some related issues are addressed in [Lou et al. 2022](https://doi.org/10.1111/1755-0998.13559), in which they also recommend down sampling as a technique to deal with depth in variation.
 
+For example, for the American Redstart data, the mean depth across all individuals was 1.5x however when examining by population, it is apparent that population means range as much as 0.5x - 3x.
 
 <img src="./img/amre-populationALL-coverageDepth-plain.png" alt="Depth-plot" width="600"/>
+
+The effect of this was apparent in PCAs in which individuals from BC1 with high coverage, as well as some other higher coverage individuals, skewed different principal component axes. I found that downsampling the higher coverage individuals to 2x resolved the principal components analysis nicely. To downsample, there were two main steps:
+
+**Step 1)** Specify the proportion of the bam file depth I'm down sampling (i.e. if I have a 2x coverage individual and want to downsample to 1x, I specify 1/2=0.5). I do this in R ([depth-summary.Rmd](./other-scripts/depth-summary.Rmd)) and output a file to read for job arrays on Slurm. In that example script and the output, I calculate the downsampling for 3 different thresholds: 0.5x, 1.0x, 2.0x. The output from this is the [downsampling-array-full.txt](./other-scripts/downsampling-array-full.txt) that I use as input into step 2
+
+**Step 2)** Downsample with Picard's [DownsampleSam function](https://gatk.broadinstitute.org/hc/en-us/articles/360037056792-DownsampleSam-Picard-). I provide an example job script for down sampling: [get_downsampling.sh](./other-scripts/get_downsampling.sh). This creates new bam files randomly downsampled to your specified value.
+
 
 ## Principal components analysis
 

@@ -1,0 +1,140 @@
+---
+title: "depth"
+author: "Matt G. DeSaix"
+date: "6/20/2022"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+read in data
+
+```{r}
+# sample meta data
+meta <- read_csv("../../data/samples/amre_master_tidy.csv")
+# individual sample depths
+all.depth <- read_delim("./depth_summary.txt", delim = " ")
+```
+
+check out depth for breeding vs nonbreeding
+
+```{r}
+depth.sum <- all.depth %>%
+  left_join(meta, by = c("bam" = "Bam"))
+
+depth.sum %>%
+  group_by(Stage) %>%
+  summarize(Depth = mean(depth),
+            SD = sd(depth))
+```
+
+Box plots of breeding vs nonbreeding (more feathers in nonbreeding)
+
+```{r}
+p.depth_breedingVnonbreeding <- ggplot(depth.sum) +
+  geom_boxplot(aes(x = Stage, y = depth)) +
+  theme_bw()
+p.depth_breedingVnonbreeding
+```
+
+```{r}
+depth.sum %>%
+  filter(Stage == "Breeding") %>%
+  arrange(depth)
+```
+
+Plot depth by population
+
+```{r}
+p.depth_pops <- ggplot(depth.sum) +
+  geom_boxplot(aes(x = Site, y = depth)) +
+  theme_bw()
+p.depth_pops
+```
+
+### Let's downsample!
+
+Based on the plot above, try downsampling to 2x, 1x, 0.5x. The downsampling function from Picard requires the proportion provided of what to downsample to. Thus, if a sample is 2x and you want to downsample to 1x, then you need to tell Picard to downsample 1x/2x = 0.5. Below, I downsample to 3 different coverage levels of interest.
+
+```{r}
+depth.frac <- depth.sum %>%
+  # filter(Stage == "Breeding") %>%
+  select(bam, depth) %>%
+  mutate(x2.0 = ifelse(depth > 2, 2 / depth, NA),
+         x1.0 = ifelse(depth > 1, 1 / depth, NA),
+         x0.5 = ifelse(depth > 0.5, 0.5 / depth, NA))
+
+depth.frac
+```
+
+Below, I create and save the file I need to run an array on Slurm to downsample each individual. I read in the bam file (column 1), output to a directory related to the coverage I'm downsampling to (column 2), and input the proportion of the bam to sample to Picard (column 3).
+
+```{r}
+depth.frac.long <- depth.frac %>%
+  pivot_longer(cols=3:5, # these columns correspond to the downsampled proportions
+               names_to = "Coverage",
+               values_to = "Frac") %>%
+  mutate(Frac = round(Frac, 2)) %>%
+  select(-depth) %>%
+  drop_na()
+depth.frac.long
+
+# write_delim(x = depth.frac.long,
+#             file = "./downsampling/downsampling-array-full.txt",
+#             col_names = F)
+```
+
+Once I've downsampled, I need proper bam lists to provide to Angsd when referencing which bam sets I'm using. Some files (if below the threshold for downsampling), will be called from the original bam, while others from the downsampled list. For example, a bam file that was originally 1.5x will be called from the original directory when working on all bams or the 2x downsampled list, but if I'm working with the 1x down sampled individuals I need to call this file from the 1x downsampled directory.
+
+Make file lists for angsd: i.e. specify correct directory for downsampled bams, as well as the old bam files (not downsampled)
+
+all individuals (330)
+
+```{r}
+bamdir <- depth.frac %>%
+  mutate(x2.0_dir = ifelse(is.na(x2.0),
+                         paste0("/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/xfull/",bam),
+                         paste0("/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/x2.0/",bam)),
+         x1.0_dir = ifelse(is.na(x1.0),
+                         paste0("/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/xfull/",bam),
+                         paste0("/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/x1.0/",bam)),
+         x0.5_dir = ifelse(is.na(x0.5),
+                          paste0("/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/xfull/",bam),
+                         paste0("/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/x0.5/",bam)))
+# 
+# write_delim(x = bamdir[,"x0.5_dir"],
+#             file = "~/Downloads/amre-full-down0.5x-bam-list.txt",
+#             col_names = F)
+
+```
+
+All bams no related (325 individuals)
+
+```{r}
+bamdir_norelate <- read_table("../../data/samples/lists/amre.all.bams.norelate.txt", col_names = "bam") %>%
+  left_join(bamdir)
+
+# write_delim(x = bamdir_norelate[,"x2.0_dir"],
+#             file = "~/Downloads/amre-all-norelate-down2.0x-bam-list.txt",
+#             col_names = F)
+```
+
+Check new depth averages
+
+```{r}
+depth.frac %>%
+  mutate(x2_depth = ifelse(is.na(x2.0), depth, x2.0 * depth),
+         x1_depth = ifelse(is.na(x1.0), depth, x1.0 * depth),
+         x0.5_depth = ifelse(is.na(x0.5), depth, x0.5 * depth)) %>%
+  summary()
+```
+
+
+
+
+
+
+
+
