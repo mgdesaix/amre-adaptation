@@ -12,6 +12,10 @@ The software used here:
 
 - NgsLD (ver 1.1.1)
 
+- GATK (ver 4.0.1.2)
+
+- PCangsd
+
 ## Identify related individuals
 
 One of the first things I do with the data is to check if I have related individuals that may bias certain subsequent analyses (e.g. population structure). With low-coverage data, [NgsRelate](https://github.com/ANGSD/NgsRelate) is your friend. They provide examples of how to get the necessary genotype likelihood file format of *.glf.gz* from ANGSD, and also produce a file from the allele frequency data that is a single column of allele frequencies.
@@ -40,7 +44,9 @@ angsd -b ${input_bams} -out ${outdir}/${outname} -gl 2 -domajorminor 1 \
   -minMapQ 30 -minQ 33 -minInd 163 -setMinDepth 240 -setMaxDepth 975 -doCounts 1 -nThreads 24
 ```
 
-Details on filtering can be found on the [ANGSD site](http://www.popgen.dk/angsd/index.php/Input). Some filtering recommendations for low-coverage data can be found in a batch effects paper by [Lou et al. 2021](https://onlinelibrary.wiley.com/doi/full/10.1111/1755-0998.13559). Above, the `-doGlf 2` gives us the needed Beagle file format `.beagle.gz` for NgsLD and `-domaf 1` provides the allele frequency file (`.mafs.gz`). We still need to modify these to provide NgsLD with a genotype likelihood file (basically a beagle file with no header and the first three columns (position, major allele, minor allele) removed) and a file with the site positions (basically the `.mafs.gz` output with no header, and only keeping the first two columns). File prep details are outlined nicely by [lcwgs-guide-tutorial](https://github.com/nt246/lcwgs-guide-tutorial/blob/main/tutorial3_ld_popstructure/markdowns/ld.md) if you're not comfortable manipulating files in bash.
+Details on filtering options can be found on the [ANGSD site](http://www.popgen.dk/angsd/index.php/Input). Some filtering recommendations for low-coverage data can be found in a batch effects paper by [Lou et al. 2022](https://onlinelibrary.wiley.com/doi/full/10.1111/1755-0998.13559). I've found the recommendation in the paper of stringently filtering mapping quality (`-minMapQ 30`) and base quality (`-minQ 33`) to help some with mild library effects (that become apparent in a PCA). 
+
+Above, the `-doGlf 2` gives us the needed Beagle file format `.beagle.gz` for NgsLD and `-domaf 1` provides the allele frequency file (`.mafs.gz`). We still need to modify these to provide NgsLD with a genotype likelihood file (basically a beagle file with no header and the first three columns (position, major allele, minor allele) removed) and a file with the site positions (basically the `.mafs.gz` output with no header, and only keeping the first two columns). File prep details are outlined nicely by [lcwgs-guide-tutorial](https://github.com/nt246/lcwgs-guide-tutorial/blob/main/tutorial3_ld_popstructure/markdowns/ld.md) if you're not comfortable manipulating files in bash.
 
 I found ngsLD to be computationally intensive and provided 1 TB of memory and 24 threads for an analysis of 325 individuals across 8,896,381 SNPs (that's a lot of comparisons). See my example script, [get-ngsLD.sh](./slurm-scripts/get-ngsLD.sh). To keep this computationally feasible, I also only considered pairwise comparisons of SNPs that were <10k bases apart.
 
@@ -70,8 +76,28 @@ The effect of this was apparent in PCAs in which individuals from BC1 with high 
 
 **Step 1)** Specify the proportion of the bam file depth I'm down sampling (i.e. if I have a 2x coverage individual and want to downsample to 1x, I specify 1/2=0.5). I do this in R ([depth-summary.Rmd](./other-scripts/depth-summary.Rmd)) and output a file to read for job arrays on Slurm. In that example script and the output, I calculate the downsampling for 3 different thresholds: 0.5x, 1.0x, 2.0x. The output from this is the [downsampling-array-full.txt](./other-scripts/downsampling-array-full.txt) that I use as input into step 2
 
-**Step 2)** Downsample with Picard's [DownsampleSam function](https://gatk.broadinstitute.org/hc/en-us/articles/360037056792-DownsampleSam-Picard-). I provide an example job script for down sampling: [get_downsampling.sh](./other-scripts/get_downsampling.sh). This creates new bam files randomly downsampled to your specified value.
+**Step 2)** Downsample with GATK/Picard's [DownsampleSam function](https://gatk.broadinstitute.org/hc/en-us/articles/360037056792-DownsampleSam-Picard-). I provide an example job script for down sampling: [get_downsampling.sh](./other-scripts/get_downsampling.sh). This creates new bam files randomly downsampled to your specified value.
+
+As a reminder, to use the newly down-sampled BAM files with the variants of interest already identified, you'll need to use ANGSD "-sites" function as described above.
+
+## PCangsd: Principal components analysis (PCA) and admixture
+
+PCA is a useful too for many applications. Throughout this workflow I have already mentioned it being used to visualize depth variation. Ideally, at this point in the workflow, after removing related individuals, reducing depth variation among populations, and stringently filtering variants, the PCA should reflect population structure. With low-coverage data, I use [PCangsd](https://github.com/Rosemeis/pcangsd). PCangsd is nice because all it requires is a beagle file as input! This is especially handy when you have a nice beagle file but then you want to subset SNPs (see previous section on using awk to do so) or subset individuals (pretty straightforward since each individual has three columns). Getting used to manipulating beagle files is a handy skillset to have.
+
+Anyway, once you have a beagle file, all you need is to run PCangsd to get a covariance matrix:
+
+```
+pcangsd -b ${input_beagle} -o ${outname} -t 24
+```
+
+Also very simple to use the same framework to get individual admixture values. The only difference is adding `--admix` to specify "run admixture analysis". Specifying `-e #` is optional for manually specifying the number of eigenvectors to retain for K clusters (i.e. -e 1 = 2 clusters, -e 2 = 3 clusters, etc). You can loop through pretty fast the different K values or run it as an array. This also writes the covariance matrix.
+
+```
+for i in {1..5}
+do
+    pcangsd -b ${input_beagle} -o ${admix_dir}/${outname} --admix -e ${i} -t 24
+done
+```
 
 
-## Principal components analysis
 
