@@ -1,4 +1,4 @@
-# Population assignment
+# Population assignment (with low-coverage sequence data)
 
 In order to determine the breeding origin of birds sampled on the nonbreeding range, we need to perform population assignment. To do this, I will go through the following steps:
 
