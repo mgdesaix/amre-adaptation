@@ -1,0 +1,132 @@
+---
+title: "Nonbreeding assignment using WGSassign"
+author: "Matt DeSaix"
+date: '2022-10-05'
+output: html_document
+---
+
+I've identified snps associated with population structure and avoided ascertainment bias using a training and testing data set. Assignment accuracy is greater than 90% for the smaller SNP sets (~450 - 8000) for the K=5 population groups. Now to check assignment of the nonbreeding individuals - what's migratory connectivity going to look like??
+
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+amre.bams <- read_table("../data/samples/lists/downsampling/amre-all-norelate_nobadPA-down2.0x-bam-list.txt",
+                        col_names = c("full_path")) %>%
+  mutate(Bam = gsub(pattern = "/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/xfull/",
+                    replacement = "",
+                    x = full_path)) %>%
+  mutate(Bam = gsub(pattern = "/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/x2.0/",
+                    replacement = "",
+                    x = Bam))
+amre.meta <- read_csv("../data/samples/amre_master_tidy.csv")
+pops <- unique(amre.meta$K5_breeding) %>%
+  unique() %>%
+  sort()
+```
+
+Select only bams of interest for training (i.e. all breeding and no individuals from PA because their group is hard to resolve)
+
+```{r}
+nonbreeding.bams.meta <- amre.bams %>%
+  left_join(amre.meta) %>%
+  filter(Stage == "Nonbreeding") %>%
+  select(full_path, Bam, Sample, Site)
+```
+
+
+
+### Checking assignment
+
+```{r}
+
+like_loo <- read_table("./nonbreeding-likelihood/amre.nonbreeding.ind148.ds_2x.sites-filter.top_50_each.pop_like.txt",
+                       col_names = pops) 
+# like_loo[like_loo == "-inf"] <- NA
+# like_loo[like_loo == "nan"] <- NA
+
+nonbreeding.assigned <- cbind(nonbreeding.bams.meta, like_loo)
+
+cluster_colors <-  c(
+  South = "#FF99FF", # pink/South
+  SouthDakota = "#3399FF", # blue/SouthDakota
+  Northeast = "#FFFF33", # yellow/Northeast
+  Northwest = "#339933", # green/Northwest
+  Newfoundland = "#CC0033" # red/Newfoundland
+  # WMT = "#00ffff" # light blue
+) 
+```
+
+
+```{r}
+nonbreeding.summary <- nonbreeding.assigned %>%
+  pivot_longer(cols = Newfoundland:SouthDakota,
+               names_to = "AssignedPop",
+               values_to = "AssignedLike") %>%
+  group_by(Sample) %>%
+  mutate(AssignedProb = round(exp(AssignedLike - min(AssignedLike)) / sum(exp(AssignedLike - min(AssignedLike))),2 )) %>%
+  filter(AssignedLike == max(AssignedLike)) %>%
+  ungroup() %>%
+  select(-full_path)
+# write_csv(x = nonbreeding.summary,
+#           file = "./output/amre.nonbreeding.ind148.ds_2x.sites-filter.top_50_each.assignment_summary.csv")
+
+nonbreeding.summary
+```
+
+Check number of accurate assignments
+
+```{r}
+nonbreeding.summary %>%
+  filter(AssignedProb > 0.8) %>%
+  nrow()
+```
+
+
+
+```{r}
+site <- "BE"
+nonbreeding.summary %>%
+  filter(Site == site) %>%
+  group_by(AssignedPop) %>%
+  summarize(N = n()) %>%
+  ungroup() %>%
+  ggplot(aes(x="", y=N, fill = AssignedPop)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  scale_fill_manual(values = cluster_colors) +
+  theme_void() +
+  theme(legend.position = "none")
+```
+
+```{r}
+unique_sites <- unique(nonbreeding.summary$Site)
+for(i in 1:length(unique_sites)){
+  p.pie <- nonbreeding.summary %>%
+  filter(Site == unique_sites[i]) %>%
+  group_by(AssignedPop) %>%
+  summarize(N = n()) %>%
+  ungroup() %>%
+  ggplot(aes(x="", y=N, fill = AssignedPop)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  scale_fill_manual(values = cluster_colors) +
+  theme_void() +
+  theme(legend.position = "none")
+  
+  outname <- paste0("./plots/pie-assignment/p.", unique_sites[i], ".pie.png")
+  ggsave(plot = p.pie,
+         filename = outname,
+         height = 4,
+         width = 4,
+         dpi = 150)
+}
+```
+
+
+
+
+
+
