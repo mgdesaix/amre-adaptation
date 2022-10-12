@@ -99,5 +99,5 @@ do
 done
 ```
 
-
+I then use the individual admixture values to create a genoscape map and also delineate breeding population clusters. In the next section, [Population Assignment](https://github.com/mgdesaix/amre-adaptation/blob/main/03_PopulationAssignment/PopAssign.md), I will use these population clusters to subset a set of SNPs to use for assigning individuals to populations.
 

@@ -6,3 +6,5 @@ Bioinformatics and analysis scripts for research on American Redstart (*Setophag
 
 2.  [Population genetics](https://github.com/mgdesaix/amre-adaptation/blob/main/02_PopulationGenetics/Popgen.md): Principal components analysis, relatedness, linkage disequilibrium, ancestry values, and more! Lots of ANGSD (Analysis of Next Generation Sequencing Data)
 
+3.  [Population assignment](https://github.com/mgdesaix/amre-adaptation/blob/main/03_PopulationAssignment/PopAssign.md): SNP screening, leave-one-out validation, and assignment probabilities with low-coverage data
+
