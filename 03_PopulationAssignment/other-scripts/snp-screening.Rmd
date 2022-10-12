@@ -1,0 +1,153 @@
+---
+title: "SNP screening for population structure"
+author: "Matt DeSaix"
+date: '2022-10-03'
+output: html_document
+---
+
+Using the full 5 million SNPs or so, it looks like K=5 nicely defines regions. Now we want to reduce the noise from this data set by identifying variants most tied to population structure in order to do population assignment of the wintering individuals. I will break up the individuals from the regions into training and test set individuals  in order to avoid ascertainment bias of SNP selection and get an accurate idea of how well we can assign individuals to these different groups.
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+amre.bams <- read_table("../data/samples/lists/downsampling/amre-all-norelate_nobadPA-down2.0x-bam-list.txt",
+                        col_names = c("full_path")) %>%
+  mutate(Bam = gsub(pattern = "/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/xfull/",
+                    replacement = "",
+                    x = full_path)) %>%
+  mutate(Bam = gsub(pattern = "/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/x2.0/",
+                    replacement = "",
+                    x = Bam))
+amre.meta <- read_csv("../data/samples/amre_master_tidy.csv")
+```
+
+Select only bams of interest for training (i.e. all breeding and no individuals from PA because their group is hard to resolve)
+
+```{r}
+amre.bams.meta <- amre.bams %>%
+  left_join(amre.meta) %>%
+  filter(Stage == "Breeding",
+         Site != "PA") %>%
+  select(full_path, Bam, Sample, Site, K5_breeding)
+```
+
+
+
+Get training bam lists
+
+```{r}
+training_bams <- amre.bams.meta %>%
+  group_by(Site) %>%
+  sample_frac(0.5)
+
+k5_groups <- unique(training_bams$K5_breeding)
+for(i in k5_groups){
+  bam_list_tmp <- training_bams %>%
+    filter(K5_breeding == i) %>%
+    ungroup() %>%
+    select(full_path)
+  outname <- paste0("./training_", i, ".txt")
+  # write_delim(x = bam_list_tmp,
+  #             file = outname,
+  #             delim = "",
+  #             col_names = F)
+}
+
+
+# write_delim(x = training_bams,
+#             file = "./training_bams_down2.0x-list.txt",
+#             delim = "\t")
+```
+
+
+```{r}
+training_bams <- read_table("./training_bams_down2.0x-list.txt")
+
+testing_bams <- amre.bams.meta %>%
+  filter(!Bam %in% training_bams$Bam) %>%
+  select(full_path)
+# write_delim(x = testing_bams,
+#             file = "./testing_bams_down2.0x-list.txt",
+#             delim = "",
+#             col_names = F)
+```
+
+
+
+```{r}
+testing.bams.meta <- amre.bams.meta %>%
+  filter(!Bam %in% training_bams$Bam) %>%
+  select(Sample, Site, K5_breeding)
+  # write_delim(x = .,
+  #             file = "~/Downloads/testing_bams_down2.0x_popIDs_k5.txt",
+  #             delim = "\t",
+  #             col_names = F)
+```
+
+
+## Assignment of test individuals
+
+```{r}
+pops <- amre.bams.meta$K5_breeding %>%
+  unique() %>%
+  sort()
+
+like_loo <- read_table("./testing-assignment/amre.testing.ind85.ds_2x.sites-filter.top_500_each.pop_like_LOO.txt",
+                       col_names = pops) 
+# like_loo[like_loo == "-inf"] <- NA
+# like_loo[like_loo == "nan"] <- NA
+
+testing.bams.assigned <- cbind(testing.bams.meta, like_loo)
+```
+
+```{r}
+testing.summary <- testing.bams.assigned %>%
+  pivot_longer(cols = Newfoundland:SouthDakota,
+               names_to = "AssignedPop",
+               values_to = "AssignedLike") %>%
+  group_by(Sample) %>%
+  filter(AssignedLike == max(AssignedLike)) %>%
+  ungroup() %>%
+  mutate(Correct = if_else(K5_breeding == AssignedPop, 1, 0))
+testing.summary
+```
+
+```{r}
+like_loo_files <- list.files("./testing-assignment/")
+like_loo_AssAcc <- c()
+
+for(i in 1:length(like_loo_files)){
+  infile <- paste0("./testing-assignment/", like_loo_files[i])
+  like_loo <- read_table(infile, col_names = pops) 
+  testing.bams.assigned <- cbind(testing.bams.meta, like_loo)
+  testing.summary <- testing.bams.assigned %>%
+  pivot_longer(cols = Newfoundland:SouthDakota,
+               names_to = "AssignedPop",
+               values_to = "AssignedLike") %>%
+  group_by(Sample) %>%
+  filter(AssignedLike == max(AssignedLike)) %>%
+  ungroup() %>%
+  mutate(Correct = if_else(K5_breeding == AssignedPop, 1, 0))
+  
+  like_loo_AssAcc[i] <- sum(testing.summary$Correct) / nrow(testing.summary) * 100
+}
+
+like_loo_AssAcc
+```
+
+
+```{r}
+# in order of 10_each...100000_each, 50_each...50000_each
+snps <- c(92,869,8429, 79119, 658724, 449, 4278, 40581, 355117)
+like_loo_summary <- tibble(file = like_loo_files,
+                           accuracy = like_loo_AssAcc) %>%
+  mutate(snps_each = as.numeric(str_split(file, "_", simplify = T)[,3])) %>%
+  add_column(snps = snps)
+```
+
+```{r}
+ggplot(like_loo_summary) +
+  geom_point(aes(x = log10(snps), y = accuracy))
+```
