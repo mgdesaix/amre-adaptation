@@ -13,7 +13,7 @@ library(tidyverse)
 ```
 
 ```{r}
-amre.bams <- read_table("../data/samples/lists/downsampling/amre-all-norelate_nobadPA-down2.0x-bam-list.txt",
+amre.bams <- read_table("../../../../analysis/data/samples/lists/downsampling/amre-all-norelate_nobadPA-down2.0x-bam-list.txt",
                         col_names = c("full_path")) %>%
   mutate(Bam = gsub(pattern = "/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/xfull/",
                     replacement = "",
@@ -21,7 +21,7 @@ amre.bams <- read_table("../data/samples/lists/downsampling/amre-all-norelate_no
   mutate(Bam = gsub(pattern = "/home/mgdesaix@colostate.edu/scratch/AMRE/all-samples/bamfiles/x2.0/",
                     replacement = "",
                     x = Bam))
-amre.meta <- read_csv("../data/samples/amre_master_tidy.csv")
+amre.meta <- read_csv("../../../../analysis/data/samples/amre_master_tidy.csv")
 pops <- unique(amre.meta$K5_breeding) %>%
   unique() %>%
   sort()
@@ -42,7 +42,7 @@ nonbreeding.bams.meta <- amre.bams %>%
 
 ```{r}
 
-like_loo <- read_table("./nonbreeding-likelihood/amre.nonbreeding.ind148.ds_2x.sites-filter.top_50_each.pop_like.txt",
+like_loo <- read_table("../../../../analysis/snp_screening/nonbreeding-likelihood/amre.nonbreeding.ind148.ds_2x.sites-filter.top_50_each.pop_like.txt",
                        col_names = pops) 
 # like_loo[like_loo == "-inf"] <- NA
 # like_loo[like_loo == "nan"] <- NA
@@ -66,7 +66,7 @@ nonbreeding.summary <- nonbreeding.assigned %>%
                names_to = "AssignedPop",
                values_to = "AssignedLike") %>%
   group_by(Sample) %>%
-  mutate(AssignedProb = round(exp(AssignedLike - min(AssignedLike)) / sum(exp(AssignedLike - min(AssignedLike))),2 )) %>%
+  mutate(AssignedProb = round(exp(AssignedLike - max(AssignedLike)) / sum(exp(AssignedLike - max(AssignedLike))),2 )) %>%
   filter(AssignedLike == max(AssignedLike)) %>%
   ungroup() %>%
   select(-full_path)
