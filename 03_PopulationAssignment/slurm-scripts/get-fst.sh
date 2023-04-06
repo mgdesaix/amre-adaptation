@@ -27,15 +27,15 @@ angsd_dir=/home/mgdesaix/programs/angsd
 fst_dir=/home/mgdesaix/projects/AMRE/snp_screening/fst
 
 # get 2dsfs
-# ${angsd_dir}/misc/realSFS ${saf_dir}/${saf1} ${saf_dir}/${saf2} -maxIter 1000 -P 8 > ${newout}
+${angsd_dir}/misc/realSFS ${saf_dir}/${saf1} ${saf_dir}/${saf2} -maxIter 1000 -P 8 > ${newout}
 
 # get fst
 ${angsd_dir}/misc/realSFS fst index ${saf_dir}/${saf1} ${saf_dir}/${saf2} -sfs ${sfs_dir}/${outname}.ml -whichFst 1 -fstout ${fst_dir}/${outname}
 
-
-${angsd_dir}/misc/realSFS fst print ${fst_dir}/${outname}.fst.idx > ${fst_dir}/${outname}.fst
+### Getting individual locus Fst stuff
+# ${angsd_dir}/misc/realSFS fst print ${fst_dir}/${outname}.fst.idx > ${fst_dir}/${outname}.fst
 
 # just report Fsts > 0 to minimize file size
-awk '$4 != 0 {print $1, $2, $3/$4}' ${fst_dir}/${outname}.fst | awk '$3 > 0 {print}' | sort -k3 -rg > ${fst_dir}/summaries/${outname}.gt0.fst
+# awk '$4 != 0 {print $1, $2, $3/$4}' ${fst_dir}/${outname}.fst | awk '$3 > 0 {print}' | sort -k3 -rg > ${fst_dir}/summaries/${outname}.gt0.fst
 
 
