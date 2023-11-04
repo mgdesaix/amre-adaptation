@@ -66,7 +66,7 @@ Anyway, once you have a beagle file, all you need is to run PCangsd to get a cov
 pcangsd -b ${input_beagle} -o ${outname} -t 24
 ```
 
-Also very simple to use the same framework to get individual admixture values. The only difference is adding `--admix` to specify "run admixture analysis". Specifying `-e #` is optional for manually specifying the number of eigenvectors to retain for K clusters (i.e. -e 1 = 2 clusters, -e 2 = 3 clusters, etc). You can loop through pretty fast the different K values or run it as an array. This also writes the covariance matrix.
+Also very simple to use the same framework to get individual admixture values. The only difference is adding `--admix` to specify "run admixture analysis". Specifying `-e #` is optional for manually specifying the number of eigenvectors to retain for K clusters (i.e. -e 1 = 2 clusters, -e 2 = 3 clusters, etc). You can loop through pretty fast the different K values or run it as an array (see [get-pcangsd-array.sh](./slurm-scripts/get-pcangsd-array.sh))
 
 ```
 for i in {1..5}

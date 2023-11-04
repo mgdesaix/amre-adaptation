@@ -13,7 +13,7 @@ See the subsections below for specific details of the analyses:
 
 ## Population structure and migratory connectivity
 
-2.  [Population genetics](https://github.com/mgdesaix/amre-adaptation/blob/main/02_PopulationGenetics/): Principal components analysis, linkage disequilibrium, admixture, and more
+2.  [Variant calling and population structure](https://github.com/mgdesaix/amre-adaptation/blob/main/02_PopulationGenetics/): Principal components analysis, linkage disequilibrium, admixture, and more
 
 3.  [Population assignment](https://github.com/mgdesaix/amre-adaptation/blob/main/03_PopulationAssignment/): Leave-one-out validation, assignment consistency, effective sample size
 
