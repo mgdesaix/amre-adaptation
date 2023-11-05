@@ -32,7 +32,7 @@ Some specific filters:
 
 I also do this as a job array with the genome broken up in ~2mb intervals to speed things up using the `-sites` and `-rf` parameters. The details are explained in the ANGSD [-sites documentation](http://www.popgen.dk/angsd/index.php/Sites).
 
-This produced 4,867,951 SNPs
+This produced 4,875,729 SNPs
 
 ## Linkage disequilibrium
 
