@@ -44,7 +44,7 @@ This is pretty computationally intensive and provided 380 GB of memory across 24
 
 I used the [prune_graph](https://github.com/fgvieira/prune_graph) software to select SNPs from the correlated pairs (r > 0.5). I provide an example script of this as well, [get-LDpruned.sh](./slurm-scripts/get-LDpruned.sh).
 
-This reduced the data set to 3,956,902 SNPs, cool!
+This reduced the data set to 4,434,469 SNPs, cool!
 
 ## Subset beagle files
 
